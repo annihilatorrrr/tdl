@@ -3,6 +3,7 @@ package downloader
 import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"os"
+	"time"
 )
 
 // writeAt wrapper for file to use progress bar
@@ -19,6 +20,12 @@ func (w *writeAt) WriteAt(p []byte, off int64) (int, error) {
 		w.tracker.MarkAsErrored()
 		return 0, err
 	}
-	w.tracker.Increment(int64(at))
+
+	// some small files may finish too fast, terminal history may not be overwritten
+	// this is just a simple way to avoid the problem
+	if w.tracker.Value()+int64(at) >= w.tracker.Total {
+		time.Sleep(time.Millisecond * 200) // to ensure the progress render next time
+		w.tracker.Increment(int64(at))
+	}
 	return at, nil
 }
